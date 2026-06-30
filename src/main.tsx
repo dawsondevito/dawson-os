@@ -1,24 +1,383 @@
-import React,{useMemo,useState}from"react";
-import{createRoot}from"react-dom/client";
-import{Briefcase,CalendarDays,Dumbbell,Home,Settings,Shield,Wallet,BookOpen,ClipboardList}from"lucide-react";
-import"./index.css";import{seedState}from"./data/seed";import{AppState}from"./types";
-const key="dawson-os-v1";const load=():AppState=>{const s=localStorage.getItem(key);return s?JSON.parse(s):seedState};
-const nav=[["Dashboard",ClipboardList],["Daily Mission",CalendarDays],["Career Command",Briefcase],["Federal LE",Shield],["Financial Independence",Wallet],["Fitness Readiness",Dumbbell],["Reading Intelligence",BookOpen],["Home Command",Home],["Settings",Settings]] as const;
-function Progress({value}:{value:number}){return <div className="h-2 rounded-full bg-white/10"><div className="h-2 rounded-full bg-gold" style={{width:`${Math.min(100,Math.max(0,value))}%`}}/></div>}
-function App(){const[page,setPage]=useState("Dashboard");const[state,setState]=useState<AppState>(load());const update=(n:AppState)=>{setState(n);localStorage.setItem(key,JSON.stringify(n))};const score=useMemo(()=>Math.round(state.checklist.filter(t=>t.done).length/state.checklist.length*100),[state.checklist]);
-return <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,#253858_0,#111D2E_35%,#0e141f_100%)]"><div className="flex">
-<aside className="min-h-screen w-72 border-r border-white/10 bg-black/20 p-6"><div className="mb-8"><div className="label">DawsonOS</div><h1 className="mt-2 text-2xl font-bold">Command Center</h1><p className="mt-2 text-sm text-ivory/60">Courage • Integrity • Discipline</p></div><nav className="space-y-2">{nav.map(([item,Icon])=><button key={item} onClick={()=>setPage(item)} className={`flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-sm ${page===item?"bg-gold text-charcoal font-semibold":"text-ivory/80 hover:bg-white/10"}`}><Icon size={18}/>{item}</button>)}</nav></aside>
-<main className="flex-1 p-8"><header className="mb-8 flex items-end justify-between"><div><div className="label">Personal Operating System</div><h2 className="mt-2 text-4xl font-bold">{page}</h2></div><div className="rounded-full border border-gold/40 px-4 py-2 text-sm text-gold">Mission Status: ACTIVE</div></header>
-{page==="Dashboard"&&<div className="grid grid-cols-3 gap-5"><div className="card col-span-2"><div className="label">Mission</div><h3 className="mt-2 text-2xl font-semibold">Become financially stable, physically ready, and prepared for federal law enforcement.</h3><p className="mt-3 text-ivory/70">Lead by example. Listen first. Earn trust through consistent action.</p></div><div className="card"><div className="label">Daily Discipline</div><div className="mt-3 text-4xl font-bold">{score}%</div><Progress value={score}/></div><div className="card"><div className="label">Emergency Fund</div><div className="mt-3 text-3xl font-bold">${state.finance.emergencyFund}/$1,000</div><Progress value={state.finance.emergencyFund/10}/></div><div className="card"><div className="label">Current Weight</div><div className="mt-3 text-3xl font-bold">{state.weight} lb</div><p className="text-sm text-ivory/60">Goal: 230 lb</p></div><div className="card"><div className="label">Career Applications</div><div className="mt-3 text-3xl font-bold">{state.applications.length}</div><p className="text-sm text-ivory/60">Tracked applications</p></div><div className="card col-span-3"><div className="label">Top Three Priorities</div><div className="mt-4 grid grid-cols-3 gap-4">{state.topPriorities.map((p,i)=><div key={i} className="rounded-xl border border-white/10 bg-black/20 p-4">{p}</div>)}</div></div></div>}
-{page==="Daily Mission"&&<div className="grid grid-cols-2 gap-5"><div className="card"><div className="label">Execution Checklist</div><div className="mt-4 space-y-3">{state.checklist.map(task=><label key={task.id} className="flex items-center gap-3 rounded-lg bg-black/20 p-3"><input type="checkbox" checked={task.done} onChange={()=>update({...state,checklist:state.checklist.map(t=>t.id===task.id?{...t,done:!t.done}:t)})}/><span className={task.done?"line-through text-ivory/50":""}>{task.text}</span></label>)}</div></div><div className="card"><div className="label">SITREP</div>{(["status","win","obstacle","correction","lesson","tomorrow"] as const).map(k=><div key={k} className="mt-3"><label className="mb-1 block text-sm capitalize text-ivory/70">{k}</label><textarea className="input min-h-[54px]" value={state.sitrep[k]} onChange={e=>update({...state,sitrep:{...state.sitrep,[k]:e.target.value}})}/></div>)}</div></div>}
-{page==="Career Command"&&<Simple title="Application Tracker" items={state.applications.map(a=>`${a.company} — ${a.role} — ${a.status} — Follow up: ${a.followUp}`)}/>}
-{page==="Federal LE"&&<Simple title="Federal Law Enforcement Readiness" items={["Research FBI, DEA, HSI, ATF, Secret Service, and U.S. Marshals","Organize background information","Track fitness standards","Prepare application documents","Build federal resume"]}/>}
-{page==="Financial Independence"&&<Finance state={state} update={update}/>}
-{page==="Fitness Readiness"&&<Simple title="Fitness Readiness" items={["Morning workout","Cardio and walking","Mobility","Weight tracking","Federal fitness test preparation"]}/>}
-{page==="Reading Intelligence"&&<Simple title="Reading Intelligence" items={state.books.map(b=>`${b.title} — ${b.author} (${b.progress})`)}/>}
-{page==="Home Command"&&<Simple title="Home Command" items={["Build executive-style apartment","White columns / presidential inspiration","Wood desk and leather chairs","Library and bookshelves","Intentional purchases only"]}/>}
-{page==="Settings"&&<Simple title="System Settings" items={["Local-first storage","No cloud sync yet","Export/import next","Calendar/Gmail integration planned"]}/>}
-</main></div></div>}
-function Simple({title,items}:{title:string;items:string[]}){return <div className="card"><div className="label">{title}</div><div className="mt-4 grid gap-3">{items.map((x,i)=><div key={i} className="rounded-xl bg-black/20 p-4">{x}</div>)}</div></div>}
-function Finance({state,update}:{state:AppState;update:(s:AppState)=>void}){return <div className="grid grid-cols-2 gap-5"><div className="card"><div className="label">Monthly Obligations</div><div className="mt-4 space-y-3"><div>Rent: $1,250 due on the 1st</div><div>Car loan: $307 due around the 15th</div><div>Electric/Gas: near end of month</div><div>Apple storage: ~$3/month</div><div>Xbox Game Pass: monthly</div></div></div><div className="card"><div className="label">Financial Independence</div><label className="mt-4 block text-sm text-ivory/70">Emergency Fund</label><input className="input mt-1" type="number" value={state.finance.emergencyFund} onChange={e=>update({...state,finance:{...state.finance,emergencyFund:Number(e.target.value)}})}/><div className="mt-4"><Progress value={state.finance.emergencyFund/10}/></div></div></div>}
-createRoot(document.getElementById("root")!).render(<App/>);
+import React, { useMemo, useState } from "react";
+import { createRoot } from "react-dom/client";
+import "./index.css";
+
+type Task = { id: string; text: string; done: boolean };
+type Application = {
+  company: string;
+  role: string;
+  date: string;
+  status: string;
+  followUp: string;
+  notes: string;
+};
+type Book = { title: string; author: string; progress: string; lesson: string };
+type Finance = { emergencyFund: number; income: number; expenses: number; netWorth: number };
+type AppState = {
+  topPriorities: string[];
+  checklist: Task[];
+  sitrep: {
+    status: string;
+    win: string;
+    obstacle: string;
+    correction: string;
+    lesson: string;
+    tomorrow: string;
+  };
+  applications: Application[];
+  books: Book[];
+  finance: Finance;
+  weight: number;
+};
+
+const storageKey = "dawson-os-v02";
+
+const seedState: AppState = {
+  topPriorities: [
+    "Submit five quality job applications",
+    "Complete fitness and federal readiness block",
+    "Read 20 pages and record one lesson"
+  ],
+  checklist: [
+    { id: "1", text: "Morning brief", done: false },
+    { id: "2", text: "Workout", done: false },
+    { id: "3", text: "Career block", done: false },
+    { id: "4", text: "Financial action", done: false },
+    { id: "5", text: "Read 20 pages", done: false },
+    { id: "6", text: "Clean 15 minutes", done: false },
+    { id: "7", text: "No gaming before mission complete", done: false }
+  ],
+  sitrep: {
+    status: "Active",
+    win: "",
+    obstacle: "",
+    correction: "",
+    lesson: "",
+    tomorrow: ""
+  },
+  applications: [
+    {
+      company: "Example Company",
+      role: "Director of Operations",
+      date: "2026-07-01",
+      status: "Applied",
+      followUp: "2026-07-08",
+      notes: "Tailor executive resume and follow up."
+    }
+  ],
+  books: [{ title: "Tuesdays with Morrie", author: "Mitch Albom", progress: "Planned", lesson: "" }],
+  finance: { emergencyFund: 0, income: 0, expenses: 0, netWorth: 0 },
+  weight: 312
+};
+
+const navItems = [
+  "Command Center",
+  "Daily Mission",
+  "Career Command",
+  "Federal Command",
+  "Financial Command",
+  "Fitness Readiness",
+  "Reading Intelligence",
+  "Home Command",
+  "Vehicle Command",
+  "Weekly Review",
+  "Settings"
+];
+
+function loadState(): AppState {
+  try {
+    const saved = localStorage.getItem(storageKey);
+    return saved ? JSON.parse(saved) : seedState;
+  } catch {
+    return seedState;
+  }
+}
+
+function Progress({ value }: { value: number }) {
+  return (
+    <div className="progress">
+      <span style={{ width: `${Math.min(100, Math.max(0, value))}%` }} />
+    </div>
+  );
+}
+
+function App() {
+  const [page, setPage] = useState("Command Center");
+  const [state, setState] = useState<AppState>(loadState());
+
+  function update(next: AppState) {
+    setState(next);
+    localStorage.setItem(storageKey, JSON.stringify(next));
+  }
+
+  const disciplineScore = useMemo(() => {
+    return Math.round((state.checklist.filter((task) => task.done).length / state.checklist.length) * 100);
+  }, [state.checklist]);
+
+  const emergencyPct = Math.round((state.finance.emergencyFund / 1000) * 100);
+  const federalReadiness = 28;
+  const readingProgress = state.books.length > 0 ? 18 : 0;
+
+  return (
+    <div className="app-shell">
+      <aside className="sidebar">
+        <div className="brand-card">
+          <div className="brand-kicker">DawsonOS</div>
+          <div className="brand-title">Command</div>
+          <p className="brand-subtitle">Executive Personal Operating System</p>
+        </div>
+
+        <nav className="nav">
+          {navItems.map((item, index) => (
+            <button
+              key={item}
+              className={`nav-button ${page === item ? "active" : ""}`}
+              onClick={() => setPage(item)}
+            >
+              <span className="nav-icon">{["🏛", "📅", "💼", "🛡", "💰", "🏋️", "📚", "🏠", "🚗", "📋", "⚙️"][index]}</span>
+              <span>{item}</span>
+            </button>
+          ))}
+        </nav>
+
+        <div className="sidebar-footer">
+          <strong>Mission:</strong><br />
+          Build stability, readiness, and trust through disciplined execution.
+        </div>
+      </aside>
+
+      <main className="main">
+        <header className="topbar">
+          <div>
+            <div className="eyebrow">Good Morning</div>
+            <h1 className="page-title">{page === "Command Center" ? "Mr. Dawson De Vito" : page}</h1>
+            <p className="subtitle">
+              Lead by example. Listen first. Earn trust through consistent action.
+            </p>
+          </div>
+          <div className="status-pill">Mission Status: ACTIVE</div>
+        </header>
+
+        {page === "Command Center" && (
+          <div className="grid">
+            <section className="card wide">
+              <div className="section-label">Command Brief</div>
+              <h2 style={{ marginTop: 12 }}>Today's Mission</h2>
+              <p className="muted">
+                Build forward movement before comfort. Career first, fitness second, finances protected.
+              </p>
+              <div className="mission-list">
+                {state.topPriorities.map((priority) => (
+                  <div className="mission-item" key={priority}>
+                    <span className="check-dot" />
+                    <span>{priority}</span>
+                  </div>
+                ))}
+              </div>
+            </section>
+
+            <section className="card">
+              <div className="section-label">Daily Discipline</div>
+              <div className="kpi">{disciplineScore}%</div>
+              <Progress value={disciplineScore} />
+              <p className="muted">Checklist completion</p>
+            </section>
+
+            <section className="card">
+              <div className="section-label">Emergency Fund</div>
+              <div className="kpi">${state.finance.emergencyFund}</div>
+              <Progress value={emergencyPct} />
+              <p className="muted">Target: $1,000</p>
+            </section>
+
+            <section className="card">
+              <div className="section-label">Current Weight</div>
+              <div className="kpi">{state.weight}</div>
+              <Progress value={42} />
+              <p className="muted">Goal: 230 lb</p>
+            </section>
+
+            <section className="card">
+              <div className="section-label">Career Applications</div>
+              <div className="kpi">{state.applications.length}</div>
+              <p className="muted">Tracked opportunities</p>
+            </section>
+
+            <section className="card">
+              <div className="section-label">Federal Readiness</div>
+              <div className="kpi">{federalReadiness}%</div>
+              <Progress value={federalReadiness} />
+              <p className="muted">Agency prep and documents</p>
+            </section>
+
+            <section className="card">
+              <div className="section-label">Reading Progress</div>
+              <div className="kpi">{readingProgress}%</div>
+              <Progress value={readingProgress} />
+              <p className="muted">Current book pipeline</p>
+            </section>
+
+            <section className="card full">
+              <div className="section-label">Bills Due</div>
+              <div className="mission-list">
+                <div className="mission-item"><span className="check-dot" /> Rent — $1,250 due on the 1st</div>
+                <div className="mission-item"><span className="check-dot" /> Car loan — $307 due around the 15th</div>
+                <div className="mission-item"><span className="check-dot" /> Electric/Gas — near end of month</div>
+              </div>
+            </section>
+          </div>
+        )}
+
+        {page === "Daily Mission" && (
+          <div className="grid">
+            <section className="card half">
+              <div className="section-label">Execution Checklist</div>
+              <h2 style={{ marginTop: 12 }}>Daily Orders</h2>
+              {state.checklist.map((task) => (
+                <label key={task.id} className={`task ${task.done ? "done" : ""}`}>
+                  <input
+                    type="checkbox"
+                    checked={task.done}
+                    onChange={() =>
+                      update({
+                        ...state,
+                        checklist: state.checklist.map((item) =>
+                          item.id === task.id ? { ...item, done: !item.done } : item
+                        )
+                      })
+                    }
+                  />
+                  {task.text}
+                </label>
+              ))}
+            </section>
+
+            <section className="card half">
+              <div className="section-label">Situation Report</div>
+              {(["status", "win", "obstacle", "correction", "lesson", "tomorrow"] as const).map((field) => (
+                <div className="field" key={field}>
+                  <label>{field}</label>
+                  <textarea
+                    value={state.sitrep[field]}
+                    onChange={(event) =>
+                      update({ ...state, sitrep: { ...state.sitrep, [field]: event.target.value } })
+                    }
+                  />
+                </div>
+              ))}
+            </section>
+          </div>
+        )}
+
+        {page === "Career Command" && (
+          <section className="card full">
+            <div className="section-label">Application Tracker</div>
+            <h2 style={{ marginTop: 12 }}>Career Pipeline</h2>
+            <div className="table-like">
+              <div className="row header">
+                <span>Company</span><span>Role</span><span>Status</span><span>Follow Up</span><span>Notes</span>
+              </div>
+              {state.applications.map((app) => (
+                <div className="row" key={`${app.company}-${app.role}`}>
+                  <span>{app.company}</span>
+                  <span>{app.role}</span>
+                  <span>{app.status}</span>
+                  <span>{app.followUp}</span>
+                  <span>{app.notes}</span>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {page === "Federal Command" && (
+          <SimplePage
+            title="Federal Law Enforcement Readiness"
+            items={["FBI", "DEA", "ATF", "HSI", "Secret Service", "U.S. Marshals", "CBP"]}
+          />
+        )}
+
+        {page === "Financial Command" && (
+          <div className="grid">
+            <section className="card half">
+              <div className="section-label">Monthly Obligations</div>
+              <div className="mission-list">
+                <div className="mission-item"><span className="check-dot" /> Rent: $1,250 due on the 1st</div>
+                <div className="mission-item"><span className="check-dot" /> Car loan: $307 due around the 15th</div>
+                <div className="mission-item"><span className="check-dot" /> Apple storage: ~$3 monthly</div>
+                <div className="mission-item"><span className="check-dot" /> Xbox Game Pass: monthly</div>
+              </div>
+            </section>
+
+            <section className="card half">
+              <div className="section-label">Emergency Fund</div>
+              <div className="field">
+                <label>Emergency fund balance</label>
+                <input
+                  type="number"
+                  value={state.finance.emergencyFund}
+                  onChange={(event) =>
+                    update({
+                      ...state,
+                      finance: { ...state.finance, emergencyFund: Number(event.target.value) }
+                    })
+                  }
+                />
+              </div>
+              <Progress value={emergencyPct} />
+              <p className="muted">First milestone: $1,000</p>
+            </section>
+          </div>
+        )}
+
+        {page === "Fitness Readiness" && (
+          <SimplePage title="Fitness Readiness" items={["Morning workout", "Cardio", "Mobility", "Weekly weigh-in", "Federal fitness prep"]} />
+        )}
+
+        {page === "Reading Intelligence" && (
+          <SimplePage title="Reading Intelligence" items={state.books.map((book) => `${book.title} — ${book.author} (${book.progress})`)} />
+        )}
+
+        {page === "Home Command" && (
+          <SimplePage title="Home Command" items={["Executive apartment", "Wood desk", "Leather chairs", "Bookshelves", "White columns inspiration"]} />
+        )}
+
+        {page === "Vehicle Command" && (
+          <SimplePage title="Vehicle Command" items={["Mileage", "Oil change", "Tire rotation", "Registration", "Inspection", "Insurance"]} />
+        )}
+
+        {page === "Weekly Review" && (
+          <SimplePage title="Weekly Review" items={["Wins", "Failures", "Lessons learned", "Money saved", "Applications sent", "Workouts", "Pages read"]} />
+        )}
+
+        {page === "Settings" && (
+          <section className="card full">
+            <div className="section-label">System Settings</div>
+            <h2 style={{ marginTop: 12 }}>DawsonOS v0.2</h2>
+            <p className="muted">Local-first prototype. GitHub and Vercel deployment active.</p>
+          </section>
+        )}
+
+        <div className="version">DawsonOS v0.2 • Executive Command Center</div>
+      </main>
+    </div>
+  );
+}
+
+function SimplePage({ title, items }: { title: string; items: string[] }) {
+  return (
+    <section className="card full">
+      <div className="section-label">{title}</div>
+      <div className="mission-list">
+        {items.map((item) => (
+          <div className="mission-item" key={item}>
+            <span className="check-dot" />
+            <span>{item}</span>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+createRoot(document.getElementById("root")!).render(<App />);
